@@ -142,6 +142,24 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 .status .grow { flex: 1; }
 #st-file.mod { color: var(--accent); }
 
+/* touch screens only: bigger targets, buttons for things a keyboard would do */
+.touch-only { display: none; }
+@media (pointer: coarse) {
+  .touch-only { display: inline; }
+  button, .tab, .fb-wrap { touch-action: manipulation; }
+  input, select { font-size: 16px; }
+  .hwrap { font-size: 16px; }
+  .menu label { align-items: center; }
+  #title { font-size: 20px; }
+  .menu, .toolbar { gap: 4px 18px; }
+  .menu button, .tool, .rowtools button { padding: 6px 0; }
+  .fb-grid { grid-template-columns: 2.5ch 2.6rem repeat(15, 2.6rem); min-width: 0; }
+  .fc { height: 40px; }
+  .sname { line-height: 40px; }
+  .ln { line-height: 1.9; }
+  .app { padding-bottom: 96px; }
+  .status .inner { padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+}
 .help { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); display: none; align-items: center; justify-content: center; padding: 16px; }
 .help.show { display: flex; }
 .help .box { background: var(--bg); border: 1px solid var(--line); padding: 16px 22px 18px; max-width: 100%; max-height: 90vh; overflow: auto; font-size: 13px; }
@@ -201,8 +219,11 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
     <button class="tool" data-act="bar" title="Bar line (|)">[| bar]</button>
     <button class="tool" data-act="rs" title="Repeat start ([)">[|: repeat start]</button>
     <button class="tool" data-act="re" title="Repeat end (])">[:| repeat end]</button>
+    <button class="tool touch-only" data-act="mute" title="Muted string (x)">[x mute]</button>
     <button class="tool" data-act="play" title="Play current column (p)">[play col]</button>
     <button class="tool" data-act="addrow" title="New row below (enter)">[+ row]</button>
+    <button class="tool touch-only" data-act="undo" title="Undo (⌘Z)">[undo]</button>
+    <button class="tool touch-only" data-act="redo" title="Redo (⇧⌘Z)">[redo]</button>
   </div>
 
   <div id="rows"></div>
@@ -874,6 +895,9 @@ function act(name, r) {
     }
     case 'help': $('#help').classList.toggle('show'); return;
     case 'play': return playColumn(curCol());
+    case 'undo': return restore(undoStack, redoStack);
+    case 'redo': return restore(redoStack, undoStack);
+    case 'mute': return commit(() => { ensureNoteCol(); const c = curCol(); c.n[cur.str] = c.n[cur.str] === 'x' ? null : 'x'; });
     case 'addcol': return commit(() => insertAfter(emptyCol()));
     case 'delcol': return commit(() => deleteCol(false));
     case 'bar': return commit(() => insertAfter({ t: 'bar' }));
@@ -960,10 +984,17 @@ document.addEventListener('click', e => {
   if (col) {
     const r = +col.closest('.row').dataset.r, c = +col.dataset.c;
     const ln = e.target.closest('.ln[data-s]');
+    const onCount = e.target.closest('.ln.ann');
     move(() => {
       cur.row = r; cur.col = c;
       if (ln) cur.str = +ln.dataset.s;
     });
+    // clicking the x2 above a repeat end asks for a new count (the only way without a keyboard)
+    if (onCount && curCol().t === 're') {
+      const x = parseInt(prompt('Repeat count', curCol().x), 10);
+      if (x >= 1 && x <= 99 && x !== curCol().x) commit(() => { curCol().x = x; });
+      return;
+    }
     playColumn(curCol());
     return;
   }
@@ -1043,7 +1074,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'End') move(() => { cur.col = row().cols.length - 1; });
   else if (k === ' ') commit(() => insertAfter(emptyCol()));
   else if (/^[0-9]$/.test(k)) typeDigit(k);
-  else if (k === 'x' || k === 'X') commit(() => { ensureNoteCol(); const c = curCol(); c.n[cur.str] = c.n[cur.str] === 'x' ? null : 'x'; });
+  else if (k === 'x' || k === 'X') act('mute');
   else if (k === '|') act('bar');
   else if (k === '[') act('rs');
   else if (k === ']') act('re');
