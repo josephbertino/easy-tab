@@ -46,6 +46,7 @@
   --fg: #d6d8cf;
   --dim: #7b8073;
   --faint: #34382f;
+  --hint: #595e53;
   --line: #4a4f44;
   --accent: #e0b057;
   --accent-bg: rgba(224, 176, 87, .16);
@@ -59,6 +60,7 @@
     --fg: #22241f;
     --dim: #6c7064;
     --faint: #d6d5cb;
+    --hint: #a3a499;
     --line: #a9aa9e;
     --accent: #95650f;
     --accent-bg: rgba(149, 101, 15, .13);
@@ -70,6 +72,7 @@
   --fg: #22241f;
   --dim: #6c7064;
   --faint: #d6d5cb;
+  --hint: #a3a499;
   --line: #a9aa9e;
   --accent: #95650f;
   --accent-bg: rgba(149, 101, 15, .13);
@@ -114,7 +117,8 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 .hwrap { flex: 1; min-width: 0; display: flex; position: relative; }
 .heading { flex: 1; min-width: 0; color: var(--fg); }
 /* pencil sits just past the 7-character "heading" placeholder while the field is empty */
-.pencil { position: absolute; left: 8ch; top: 50%; width: 12px; height: 12px; transform: translateY(-50%); color: var(--faint); pointer-events: none; display: none; }
+.pencil { position: absolute; left: 8ch; top: 50%; width: 12px; height: 12px; transform: translateY(-50%); color: var(--hint); pointer-events: none; display: none; }
+.heading::placeholder { color: var(--hint); }
 .heading:placeholder-shown:not(:focus) + .pencil { display: block; }
 .row:hover .heading:placeholder-shown + .pencil { color: var(--dim); }
 .rowtools { display: flex; gap: 10px; color: var(--faint); }
