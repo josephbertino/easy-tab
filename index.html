@@ -7,6 +7,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <!-- search and link-preview metadata; none of this renders on the page -->
 <meta name="description" content="Free ukulele tab maker that runs in your browser. Click notes on a fretboard to write tabs, add section headings and repeat signs, hear each note and chord, save your songs, and export to plain text. No account needed.">
+<meta name="google-site-verification" content="7YO0QiWMGHLvlLtBFfrENHewB48P7TJyeF7vU1MD6zA">
 <link rel="canonical" href="https://josephbertino.github.io/easy-tab/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Easy Tab">
@@ -53,30 +54,31 @@
   --cursor-bg: rgba(214, 216, 207, .07);
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
-/* follows the browser unless the bulb toggle has set data-theme */
+/* follows the browser unless the bulb toggle has set data-theme.
+   light greys are tinted toward #0047bb */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #f4f3ee;
-    --fg: #22241f;
-    --dim: #6c7064;
-    --faint: #d6d5cb;
-    --hint: #a3a499;
-    --line: #a9aa9e;
+    --bg: #e7ebef;
+    --fg: #1d2530;
+    --dim: #5f6874;
+    --faint: #cbd2da;
+    --hint: #97a0aa;
+    --line: #a2abb6;
     --accent: #95650f;
     --accent-bg: rgba(149, 101, 15, .13);
-    --cursor-bg: rgba(34, 36, 31, .06);
+    --cursor-bg: rgba(0, 40, 110, .06);
   }
 }
 :root[data-theme="light"] {
-  --bg: #f4f3ee;
-  --fg: #22241f;
-  --dim: #6c7064;
-  --faint: #d6d5cb;
-  --hint: #a3a499;
-  --line: #a9aa9e;
+  --bg: #e7ebef;
+  --fg: #1d2530;
+  --dim: #5f6874;
+  --faint: #cbd2da;
+  --hint: #97a0aa;
+  --line: #a2abb6;
   --accent: #95650f;
   --accent-bg: rgba(149, 101, 15, .13);
-  --cursor-bg: rgba(34, 36, 31, .06);
+  --cursor-bg: rgba(0, 40, 110, .06);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--mono); }
