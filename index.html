@@ -111,7 +111,12 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 .rowhead { display: flex; align-items: baseline; gap: 10px; }
 .rownum { color: var(--faint); }
 .row.active .rownum { color: var(--accent); }
+.hwrap { flex: 1; min-width: 0; display: flex; position: relative; }
 .heading { flex: 1; min-width: 0; color: var(--fg); }
+/* pencil sits just past the 7-character "heading" placeholder while the field is empty */
+.pencil { position: absolute; left: 8ch; top: 50%; width: 12px; height: 12px; transform: translateY(-50%); color: var(--faint); pointer-events: none; display: none; }
+.heading:placeholder-shown:not(:focus) + .pencil { display: block; }
+.row:hover .heading:placeholder-shown + .pencil { color: var(--dim); }
 .rowtools { display: flex; gap: 10px; color: var(--faint); }
 .row:hover .rowtools, .row.active .rowtools { color: var(--dim); }
 .tab { display: flex; overflow-x: auto; padding: 2px 0 8px; white-space: pre; }
@@ -663,7 +668,10 @@ function renderRows() {
     h += `<section class="row${ri === cur.row ? ' active' : ''}" data-r="${ri}">
       <div class="rowhead">
         <span class="rownum">${String(ri + 1).padStart(2, '0')}</span>
-        <input class="heading" data-r="${ri}" value="${esc(r.heading)}" placeholder="heading" spellcheck="false" autocomplete="off">
+        <span class="hwrap">
+          <input class="heading" data-r="${ri}" value="${esc(r.heading)}" placeholder="heading" spellcheck="false" autocomplete="off">
+          <svg class="pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
+        </span>
         <span class="rowtools">
           <button data-act="rowup" data-r="${ri}" title="Move row up">[↑]</button>
           <button data-act="rowdown" data-r="${ri}" title="Move row down">[↓]</button>
