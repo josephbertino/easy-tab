@@ -94,6 +94,8 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 .titlewrap { display: flex; align-items: baseline; gap: 10px; flex: 1; min-width: 240px; }
 .brand { display: flex; align-items: center; gap: 6px; }
 .brand svg { width: 16px; height: 16px; flex: none; }
+/* the page heading, styled to look like the rest of the prompt */
+.brand h1 { display: inline; margin: 0; font: inherit; color: inherit; }
 #title { font-size: 20px; flex: 1; min-width: 0; }
 .menu { display: flex; gap: 14px; flex-wrap: wrap; color: var(--dim); }
 .menu button:hover, .tool:hover, .rowtools button:hover { color: var(--accent); }
@@ -163,6 +165,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 .help { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); display: none; align-items: center; justify-content: center; padding: 16px; }
 .help.show { display: flex; }
 .help .box { background: var(--bg); border: 1px solid var(--line); padding: 16px 22px 18px; max-width: 100%; max-height: 90vh; overflow: auto; font-size: 13px; }
+.help p { margin: 0 0 16px; max-width: 46ch; color: var(--dim); line-height: 1.6; }
 .help dl { display: grid; grid-template-columns: max-content auto; gap: 2px 24px; margin: 0; }
 .help dt { color: var(--accent); }
 .help dd { margin: 0; color: var(--fg); }
@@ -182,7 +185,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 <div class="app">
   <header>
     <div class="titlewrap">
-      <span class="dim brand">
+      <div class="dim brand">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <g transform="rotate(45 12 12)">
             <path d="M8.63 12.65A4 4 0 1 1 15.37 12.65A5.5 5.5 0 1 1 8.63 12.65Z"/>
@@ -191,7 +194,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
             <path d="M11 6.6V3.2M13 6.6V3.2"/>
             <rect x="10.4" y="0.6" width="3.2" height="2.6" rx="0.6"/>
           </g>
-        </svg>easy tab $</span>
+        </svg><div><h1>easy tab</h1> $</div></div>
       <input id="title" placeholder="untitled song" spellcheck="false" autocomplete="off">
     </div>
     <nav class="menu">
@@ -211,6 +214,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
     </nav>
   </header>
 
+  <main>
   <div class="fb-wrap"><div id="fretboard"></div></div>
 
   <div class="toolbar">
@@ -227,6 +231,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
   </div>
 
   <div id="rows"></div>
+  </main>
 </div>
 
 <div class="status"><div class="inner">
@@ -235,7 +240,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
   <span id="st-file"></span>
 </div></div>
 
-<div class="help" id="help"><div class="box"><dl><dt>← →</dt><dd>column</dd><dt>↑ ↓</dt><dd>string</dd><dt>⌥↑ ⌥↓</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd></dl></div></div>
+<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser, so you can click out tabs on a fretboard, hear them played back, and save or export them when you're done.</p><dl><dt>← →</dt><dd>column</dd><dt>↑ ↓</dt><dd>string</dd><dt>⌥↑ ⌥↓</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd></dl></div></div>
 
 <input type="file" id="file-input" accept=".json,.txt,application/json,text/plain" hidden>
 
