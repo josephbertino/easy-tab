@@ -85,7 +85,7 @@ html, body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 input, select { font: inherit; color: inherit; background: transparent; border: 0; outline: 0; padding: 0; }
 select option { background: var(--bg); color: var(--fg); }
-::placeholder { color: var(--faint); }
+::placeholder { color: var(--hint); }
 
 .app { max-width: 1120px; margin: 0 auto; padding: 20px 16px 72px; }
 .dim { color: var(--dim); }
@@ -122,10 +122,9 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 .heading { flex: 1; min-width: 0; color: var(--fg); }
 /* pencil sits just past the 7-character "heading" placeholder while the field is empty */
 .pencil { position: absolute; left: 8ch; top: 50%; width: 12px; height: 12px; transform: translateY(-50%); color: var(--hint); pointer-events: none; display: none; }
-.heading::placeholder { color: var(--hint); }
 .heading:placeholder-shown:not(:focus) + .pencil { display: block; }
 .row:hover .heading:placeholder-shown + .pencil { color: var(--dim); }
-.rowtools { display: flex; gap: 10px; color: var(--faint); }
+.rowtools { display: flex; gap: 10px; color: var(--hint); }
 .row:hover .rowtools, .row.active .rowtools { color: var(--dim); }
 .tab { display: flex; overflow-x: auto; padding: 2px 0 8px; white-space: pre; }
 .seg { display: flex; flex-direction: column; }
