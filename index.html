@@ -90,6 +90,8 @@ select option { background: var(--bg); color: var(--fg); }
 
 header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--faint); }
 .titlewrap { display: flex; align-items: baseline; gap: 10px; flex: 1; min-width: 240px; }
+.brand { display: flex; align-items: center; gap: 6px; }
+.brand svg { width: 16px; height: 16px; flex: none; }
 #title { font-size: 20px; flex: 1; min-width: 0; }
 .menu { display: flex; gap: 14px; flex-wrap: wrap; color: var(--dim); }
 .menu button:hover, .tool:hover, .rowtools button:hover { color: var(--accent); }
@@ -161,7 +163,16 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 <div class="app">
   <header>
     <div class="titlewrap">
-      <span class="dim">easy tab $</span>
+      <span class="dim brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <g transform="rotate(45 12 12)">
+            <path d="M8.63 12.65A4 4 0 1 1 15.37 12.65A5.5 5.5 0 1 1 8.63 12.65Z"/>
+            <circle cx="12" cy="14.2" r="1.5"/>
+            <path d="M10 19.2H14"/>
+            <path d="M11 6.6V3.2M13 6.6V3.2"/>
+            <rect x="10.4" y="0.6" width="3.2" height="2.6" rx="0.6"/>
+          </g>
+        </svg>easy tab $</span>
       <input id="title" placeholder="untitled song" spellcheck="false" autocomplete="off">
     </div>
     <nav class="menu">
