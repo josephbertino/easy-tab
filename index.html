@@ -175,6 +175,16 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 .bulb .glass { fill: none; }
 :root[data-theme="light"] .bulb .glass { fill: currentColor; fill-opacity: .25; }
 @media (prefers-color-scheme: light) { :root:not([data-theme]) .bulb .glass { fill: currentColor; fill-opacity: .25; } }
+
+/* printing shows only the plain-text tab; long rows are wrapped in script, not shrunk */
+#print-out { display: none; }
+@media print {
+  body > :not(#print-out) { display: none !important; }
+  html, body { background: #fff; color: #000; }
+  #print-out { display: block; font: 11pt/1.35 var(--mono); }
+  #print-out pre { margin: 0 0 .7em; font: inherit; break-inside: avoid; }
+  #print-out > pre, #print-out > div { margin-bottom: 1.4em; }
+}
 </style>
 <script>
   // apply a saved theme before the page paints
@@ -204,6 +214,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
       <button data-act="open" title="Open .json or .txt (⌘O)">[open]</button>
       <button data-act="save" title="Save project file (⌘S)">[save]</button>
       <button data-act="export" title="Export plain text (⌘E)">[export .txt]</button>
+      <button data-act="print" title="Print (⌘P)">[print]</button>
       <button data-act="help" title="Keyboard shortcuts (?)">[?]</button>
       <button data-act="theme" class="bulb" title="Light / dark" aria-label="Toggle light and dark mode">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -240,7 +251,8 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
   <span id="st-file"></span>
 </div></div>
 
-<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><dt>⌫ on :|</dt><dd>remove the count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd></dl></div></div>
+<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><dt>⌫ on :|</dt><dd>remove the count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd><dt>⌘P</dt><dd>print</dd></dl></div></div>
+<div id="print-out"></div>
 
 <input type="file" id="file-input" accept=".json,.txt,application/json,text/plain" hidden>
 
@@ -360,12 +372,13 @@ function colText(c) {
   return { ann: ann.padEnd(w, ' '), lines: lines.map(l => l.padEnd(w, '-')) };
 }
 
-function rowCells(r, T) {
+// `raw` is the row's columns, or a run of them when a long row is split for printing
+function rowCells(r, T, raw = r.cols) {
   const nw = Math.max(...T.strings.map(s => s.length));
   const prefix = { ann: ' '.repeat(nw + 2), lines: T.strings.map(s => s.padEnd(nw, ' ') + '|-') };
-  const cols = r.cols.map(colText);
+  const cols = raw.map(colText);
   let suffix = { ann: ' ', lines: Array(4).fill('|') };
-  const last = r.cols[r.cols.length - 1];
+  const last = raw[raw.length - 1];
   if (last.t === 'bar' || last.t === 're') {
     // a closing bar or repeat doubles as the end of the row
     const c = cols[cols.length - 1];
@@ -377,17 +390,43 @@ function rowCells(r, T) {
   return { prefix, cols, suffix };
 }
 
+// the repeat-count line (when there is one), then the four strings
+function cellLines(c) {
+  const segs = [c.prefix, ...c.cols].concat(c.suffix ? [c.suffix] : []);
+  const ann = segs.map(s => s.ann).join('').trimEnd();
+  const lines = [0, 1, 2, 3].map(k => segs.map(s => s.lines[k]).join('').trimEnd());
+  return ann ? [ann, ...lines] : lines;
+}
+
+// split a row into pieces no wider than `max` characters, for printing.
+// a piece ends after a bar or repeat end when one falls in its back half
+function rowPieces(r, T, max) {
+  const nw = Math.max(...T.strings.map(s => s.length));
+  const widths = r.cols.map(c => colText(c).lines[0].length);
+  const isEnd = c => c.t === 'bar' || c.t === 're';
+  const pieces = [];
+  for (let i = 0; i < r.cols.length; ) {
+    let w = nw + 3, j = i;   // "A|-" before the columns and "|" after
+    while (j < r.cols.length && (j === i || w + widths[j] <= max)) w += widths[j++];
+    if (j < r.cols.length) {
+      let b = j - 1;
+      while (b > i && !isEnd(r.cols[b])) b--;
+      if (isEnd(r.cols[b]) && b + 1 - i >= (j - i) / 2) j = b + 1;
+      // don't leave a closing bar or repeat end alone on the next line
+      else if (r.cols.slice(j).every(isEnd) && j - 1 > i) j--;
+    }
+    pieces.push(rowCells(r, T, r.cols.slice(i, j)));
+    i = j;
+  }
+  return pieces;
+}
+
 function songText() {
   const T = TUNINGS[song.tuning];
   const out = [song.title.trim() || 'Untitled', 'Tuning: ' + T.label, ''];
   for (const r of song.rows) {
     if (r.heading.trim()) out.push('[' + r.heading.trim() + ']');
-    const c = rowCells(r, T);
-    const segs = [c.prefix, ...c.cols].concat(c.suffix ? [c.suffix] : []);
-    const ann = segs.map(s => s.ann).join('').trimEnd();
-    if (ann) out.push(ann);
-    for (let k = 0; k < 4; k++) out.push(segs.map(s => s.lines[k]).join('').trimEnd());
-    out.push('');
+    out.push(...cellLines(rowCells(r, T)), '');
   }
   return out.join('\n');
 }
@@ -841,6 +880,22 @@ async function exportTxt() {
   }
 }
 
+// fill the print-only block with the .txt export's layout, with long rows wrapped to the page.
+// 72 characters of 11pt monospace fit inside the default margins on Letter and A4.
+// each piece is its own <pre> so a page break never splits one
+// (covers the [print] button, ⌘P and the browser menu)
+const PRINT_WIDTH = 72;
+window.addEventListener('beforeprint', () => {
+  const T = TUNINGS[song.tuning];
+  let h = `<pre>${esc((song.title.trim() || 'Untitled') + '\nTuning: ' + T.label)}</pre>`;
+  for (const r of song.rows) {
+    const pieces = rowPieces(r, T, PRINT_WIDTH).map(p => cellLines(p).join('\n'));
+    if (r.heading.trim()) pieces[0] = '[' + r.heading.trim() + ']\n' + pieces[0];
+    h += '<div>' + pieces.map(p => `<pre>${esc(p)}</pre>`).join('') + '</div>';
+  }
+  $('#print-out').innerHTML = h;
+});
+
 function confirmDiscard() {
   return !dirty || confirm('This song has unsaved changes. Discard them?');
 }
@@ -892,6 +947,7 @@ function act(name, r) {
     case 'open': return openFile();
     case 'save': return saveProject(false);
     case 'export': return exportTxt();
+    case 'print': return window.print();
     case 'sound': soundOn = !soundOn; persist(); render(); return;
     case 'theme': {
       const root = document.documentElement;
