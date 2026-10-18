@@ -240,7 +240,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
   <span id="st-file"></span>
 </div></div>
 
-<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← →</dt><dd>column</dd><dt>↑ ↓</dt><dd>string</dd><dt>⌥↑ ⌥↓</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd></dl></div></div>
+<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd></dl></div></div>
 
 <input type="file" id="file-input" accept=".json,.txt,application/json,text/plain" hidden>
 
@@ -1039,7 +1039,7 @@ document.addEventListener('change', e => {
 
 document.addEventListener('keydown', e => {
   const mod = e.metaKey || e.ctrlKey;
-  const k = e.key;
+  let k = e.key;
   const inInput = e.target instanceof Element && e.target.matches('input, select, textarea');
 
   if (mod && !e.altKey) {
@@ -1064,6 +1064,9 @@ document.addEventListener('keydown', e => {
   const help = $('#help');
   if (k === 'Escape') { help.classList.remove('show'); return; }
   if (k === '?') { help.classList.toggle('show'); return; }
+
+  // wasd act as arrows; e.code so ⌥W / ⌥S still work on a Mac
+  k = { KeyW: 'ArrowUp', KeyA: 'ArrowLeft', KeyS: 'ArrowDown', KeyD: 'ArrowRight' }[e.code] || k;
 
   let handled = true;
   if (k === 'ArrowLeft') move(() => { cur.col--; });
