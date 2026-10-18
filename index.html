@@ -251,7 +251,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
   <span id="st-file"></span>
 </div></div>
 
-<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><dt>⌫ on :|</dt><dd>remove the count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd><dt>⌘P</dt><dd>print</dd></dl></div></div>
+<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>h</dt><dd>hold to the next note</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><dt>⌫ on :|</dt><dd>remove the count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd><dt>⌘P</dt><dd>print</dd></dl></div></div>
 <div id="print-out"></div>
 
 <input type="file" id="file-input" accept=".json,.txt,application/json,text/plain" hidden>
@@ -277,6 +277,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 // ---------- model ----------
 
 const emptyCol = () => ({ t: 'n', n: [null, null, null, null] });
+const hasNote = c => c.t === 'n' && c.n.some(v => v !== null);
 const newRow = (heading = '') => ({ heading, cols: [emptyCol()] });
 const newSong = () => ({ title: '', tuning: 'standard', rows: [newRow()] });
 
@@ -372,8 +373,9 @@ function colText(c) {
   return { ann: ann.padEnd(w, ' '), lines: lines.map(l => l.padEnd(w, '-')) };
 }
 
-// `raw` is the row's columns, or a run of them when a long row is split for printing
-function rowCells(r, T, raw = r.cols) {
+// columns `from` to `to` of a row (all of them, unless a long row is split for printing)
+function rowCells(r, T, from = 0, to = r.cols.length) {
+  const raw = r.cols.slice(from, to);
   const nw = Math.max(...T.strings.map(s => s.length));
   const prefix = { ann: ' '.repeat(nw + 2), lines: T.strings.map(s => s.padEnd(nw, ' ') + '|-') };
   const cols = raw.map(colText);
@@ -387,10 +389,22 @@ function rowCells(r, T, raw = r.cols) {
     cols[cols.length - 1] = { ann: c.ann.slice(0, w).padEnd(w, ' '), lines: lines.map(l => l.padEnd(w, ' ')) };
     suffix = null;
   }
+  // a hold is a dash line above the stave from the held note to the next note in the row
+  // (or to the end of the row), drawn into the blanks of the repeat-count line
+  r.cols.forEach((c, i) => {
+    if (!c.h || !hasNote(c)) return;
+    let j = i + 1;
+    while (j < r.cols.length && !hasNote(r.cols[j])) j++;
+    for (let k = Math.max(i, from); k <= Math.min(j, to - 1); k++) {
+      const cell = cols[k - from];
+      const end = k === j ? Math.max(...r.cols[j].n.map(v => (v ? v.length : 0))) : cell.ann.length;
+      cell.ann = [...cell.ann].map((ch, p) => (p < end && ch === ' ' ? '-' : ch)).join('');
+    }
+  });
   return { prefix, cols, suffix };
 }
 
-// the repeat-count line (when there is one), then the four strings
+// the repeat-count and hold line (when there is one), then the four strings
 function cellLines(c) {
   const segs = [c.prefix, ...c.cols].concat(c.suffix ? [c.suffix] : []);
   const ann = segs.map(s => s.ann).join('').trimEnd();
@@ -415,7 +429,7 @@ function rowPieces(r, T, max) {
       // don't leave a closing bar or repeat end alone on the next line
       else if (r.cols.slice(j).every(isEnd) && j - 1 > i) j--;
     }
-    pieces.push(rowCells(r, T, r.cols.slice(i, j)));
+    pieces.push(rowCells(r, T, i, j));
     i = j;
   }
   return pieces;
@@ -441,7 +455,7 @@ function sanitizeCol(c) {
     const v = Array.isArray(c.n) ? c.n[i] : null;
     return v == null || v === '' ? null : String(v).slice(0, 3);
   });
-  return { t: 'n', n };
+  return c.h ? { t: 'n', n, h: true } : { t: 'n', n };
 }
 
 function loadJSON(text) {
@@ -493,7 +507,8 @@ function parseTxt(text) {
 
     let m;
     if ((m = t.match(/^tuning\s*:\s*(.*)$/i))) { s.tuning = tuningFromText(m[1]); tuningSet = true; continue; }
-    if (/^(x\s*\d+\s*)+$/i.test(t)) { ann = L; continue; }
+    // the line above a stave: repeat counts and hold dashes
+    if (/^[-\s]*(x\s*\d+[-\s]*)*$/i.test(t)) { ann = L; continue; }
     if ((m = t.match(/^\[(.*)\]$/))) { heading = m[1].trim(); continue; }
     if (!titleSet && !s.rows.length) { s.title = t; titleSet = true; continue; }
     heading = t;
@@ -561,6 +576,8 @@ function parseBlock(ls, ann) {
     if (j === i) { i++; continue; }
     const col = emptyCol();
     K.forEach(k => { col.n[k] = bodies[k].slice(i, j).replace(/[-\s|:*=]/g, '') || null; });
+    // a hold line that carries on past the note starts a hold here; one that stops at it only ends one
+    if (ann && ann[off + j] === '-') col.h = true;
     cols.push(col);
     i = j;
   }
@@ -1147,6 +1164,9 @@ document.addEventListener('keydown', e => {
   else if (k === ']') act('re');
   else if (k === 'p' || k === 'P') act('play');
   else if (k === 'm' || k === 'M') act('sound');
+  else if (k === 'h' || k === 'H') {
+    if (hasNote(curCol())) commit(() => { const c = curCol(); if (c.h) delete c.h; else c.h = true; });
+  }
   else if (k === 'Enter') act('addrow');
   else if (k === 'Delete' || (k === 'Backspace' && e.shiftKey)) commit(() => deleteCol(false));
   else if (k === 'Backspace') {
