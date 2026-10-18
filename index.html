@@ -240,7 +240,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
   <span id="st-file"></span>
 </div></div>
 
-<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd></dl></div></div>
+<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><dt>⌫ on :|</dt><dd>remove the count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd></dl></div></div>
 
 <input type="file" id="file-input" accept=".json,.txt,application/json,text/plain" hidden>
 
@@ -354,7 +354,7 @@ function colText(c) {
     lines = Array(4).fill('|:-');
   } else {
     lines = Array(4).fill(':|-');
-    ann = 'x' + c.x;
+    if (c.x) ann = 'x' + c.x;
   }
   const w = Math.max(lines[0].length, ann.length);
   return { ann: ann.padEnd(w, ' '), lines: lines.map(l => l.padEnd(w, '-')) };
@@ -397,7 +397,7 @@ function songText() {
 function sanitizeCol(c) {
   if (!c || typeof c !== 'object') return emptyCol();
   if (c.t === 'bar' || c.t === 'rs') return { t: c.t };
-  if (c.t === 're') return { t: 're', x: Math.max(1, Math.min(99, parseInt(c.x, 10) || 2)) };
+  if (c.t === 're') return { t: 're', x: c.x == null ? null : Math.max(1, Math.min(99, parseInt(c.x, 10) || 2)) };
   const n = [0, 1, 2, 3].map(i => {
     const v = Array.isArray(c.n) ? c.n[i] : null;
     return v == null || v === '' ? null : String(v).slice(0, 3);
@@ -498,7 +498,7 @@ function parseBlock(ls, ann) {
 
     if (ch.some(dotty) && ch.every(c => dotty(c) || isDash(c)) && nx.every(c => c === '|')) {
       flush();
-      let x = 2;
+      let x = null;
       if (ann) {
         const m = ann.slice(Math.max(0, off + i - 1), off + i + 6).match(/x\s*(\d+)/i);
         if (m) x = Math.max(1, Math.min(99, +m[1]));
@@ -742,7 +742,9 @@ function describeCol(c) {
   const T = TUNINGS[song.tuning];
   if (c.t === 'bar') return 'bar line';
   if (c.t === 'rs') return 'repeat start';
-  if (c.t === 're') return `repeat end x${c.x} · type a number to change the count`;
+  if (c.t === 're') return c.x
+    ? `repeat end x${c.x} · type a number to change the count, ⌫ to remove it`
+    : 'repeat end, no count · type a number to add one';
   const v = c.n[cur.str];
   if (v === null) return `${T.strings[cur.str]} string · empty`;
   if (v === 'x') return `${T.strings[cur.str]} string · muted`;
@@ -996,8 +998,9 @@ document.addEventListener('click', e => {
     });
     // clicking the x2 above a repeat end asks for a new count (the only way without a keyboard)
     if (onCount && curCol().t === 're') {
-      const x = parseInt(prompt('Repeat count', curCol().x), 10);
-      if (x >= 1 && x <= 99 && x !== curCol().x) commit(() => { curCol().x = x; });
+      const a = prompt('Repeat count (leave blank for none)', curCol().x ?? '');
+      const x = a !== null && a.trim() === '' ? null : parseInt(a, 10);
+      if ((x === null || (x >= 1 && x <= 99)) && a !== null && x !== curCol().x) commit(() => { curCol().x = x; });
       return;
     }
     playColumn(curCol());
@@ -1093,6 +1096,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'Backspace') {
     const c = curCol();
     if (c.t === 'n' && c.n[cur.str] !== null) commit(() => { curCol().n[cur.str] = null; });
+    else if (c.t === 're' && c.x) commit(() => { curCol().x = null; });
     else commit(() => deleteCol(true));
   }
   else handled = false;
