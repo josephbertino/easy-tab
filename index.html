@@ -855,8 +855,9 @@ function restoreAutosave() {
   clampCur();
 }
 
+// file names are the song title with all whitespace removed, e.g. "Over The Rainbow" -> OverTheRainbow
 function baseName() {
-  return (song.title.trim() || 'untitled').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'untitled';
+  return song.title.replace(/\s+/g, '') || 'Untitled';
 }
 
 function download(text, name, type) {
@@ -877,8 +878,7 @@ async function writeWithPicker(text, name, type, desc, ext, handle) {
 
 async function saveProject(saveAs) {
   const text = JSON.stringify({ app: 'easy-tab', version: 1, song }, null, 2);
-  // the song title with all whitespace removed, e.g. "Over The Rainbow" -> OverTheRainbow.json
-  const name = (song.title.replace(/\s+/g, '') || 'Untitled') + '.json';
+  const name = baseName() + '.json';
   try {
     if (window.showSaveFilePicker) {
       fileHandle = await writeWithPicker(text, name, 'application/json', 'Easy Tab song', '.json', saveAs ? null : fileHandle);
