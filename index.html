@@ -915,7 +915,11 @@ async function exportTxt() {
 // each piece is its own <pre> so a page break never splits one
 // (covers the [print] button, ⌘P and the browser menu)
 const PRINT_WIDTH = 72;
+let pageTitle = null;
 window.addEventListener('beforeprint', () => {
+  // browsers name a saved PDF after the page title, so use the song's file name while printing
+  pageTitle = document.title;
+  document.title = baseName();
   const T = TUNINGS[song.tuning];
   let h = `<pre>${esc((song.title.trim() || 'Untitled') + '\nTuning: ' + T.label)}</pre>`;
   for (const r of song.rows) {
@@ -924,6 +928,10 @@ window.addEventListener('beforeprint', () => {
     h += '<div>' + pieces.map(p => `<pre>${esc(p)}</pre>`).join('') + '</div>';
   }
   $('#print-out').innerHTML = h;
+});
+window.addEventListener('afterprint', () => {
+  if (pageTitle !== null) document.title = pageTitle;
+  pageTitle = null;
 });
 
 function confirmDiscard() {
