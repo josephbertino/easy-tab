@@ -230,6 +230,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
 
   <div class="toolbar">
     <button class="tool" data-act="addcol" title="Insert column after cursor (space)">[+ col]</button>
+    <button class="tool touch-only" data-act="addhalf" title="Insert a 1-dash step (shift+space)">[+ half]</button>
     <button class="tool" data-act="delcol" title="Delete column (shift+backspace)">[- col]</button>
     <button class="tool" data-act="bar" title="Bar line (|)">[| bar]</button>
     <button class="tool" data-act="rs" title="Repeat start ([)">[|: repeat start]</button>
@@ -251,7 +252,7 @@ header { display: flex; align-items: baseline; gap: 12px 20px; flex-wrap: wrap; 
   <span id="st-file"></span>
 </div></div>
 
-<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>h</dt><dd>hold to the next note</dd><dt>space</dt><dd>insert column</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><dt>⌫ on :|</dt><dd>remove the count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd><dt>⌘P</dt><dd>print</dd></dl></div></div>
+<div class="help" id="help"><div class="box"><p>Easy Tab is a free ukulele tab maker that runs in your browser</p><dl><dt>← → / a d</dt><dd>column</dd><dt>↑ ↓ / w s</dt><dd>string</dd><dt>⌥↑ ⌥↓ / ⌥w ⌥s</dt><dd>row</dd><dt>home end</dt><dd>first / last column</dd><div class="gap"></div><dt>0–9</dt><dd>fret (two quick digits for 10–15)</dd><dt>x</dt><dd>muted string</dd><dt>h</dt><dd>hold to the next note</dd><dt>space</dt><dd>insert column</dd><dt>⇧→ ⇧space</dt><dd>1-dash step instead of 2</dd><dt>⌫</dt><dd>clear note, or delete an empty column</dd><dt>⇧⌫</dt><dd>delete column</dd><dt>enter</dt><dd>new row</dd><div class="gap"></div><dt>|</dt><dd>bar</dd><dt>[ ]</dt><dd>repeat start / end</dd><dt>0–9 on :|</dt><dd>repeat count</dd><dt>⌫ on :|</dt><dd>remove the count</dd><div class="gap"></div><dt>p</dt><dd>play column</dd><dt>m</dt><dd>sound on / off</dd><div class="gap"></div><dt>⌘Z ⇧⌘Z</dt><dd>undo / redo</dd><dt>⌘S ⇧⌘S</dt><dd>save / save as</dd><dt>⌘O</dt><dd>open .json or .txt</dd><dt>⌘E</dt><dd>export .txt</dd><dt>⌘P</dt><dd>print</dd></dl></div></div>
 <div id="print-out"></div>
 
 <input type="file" id="file-input" accept=".json,.txt,application/json,text/plain" hidden>
@@ -276,7 +277,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 
 // ---------- model ----------
 
-const emptyCol = () => ({ t: 'n', n: [null, null, null, null] });
+// an empty column is a 2-dash step, or a 1-dash step when `half` (w: 1)
+const emptyCol = half => (half ? { t: 'n', n: [null, null, null, null], w: 1 } : { t: 'n', n: [null, null, null, null] });
 const hasNote = c => c.t === 'n' && c.n.some(v => v !== null);
 const newRow = (heading = '') => ({ heading, cols: [emptyCol()] });
 const newSong = () => ({ title: '', tuning: 'standard', rows: [newRow()] });
@@ -343,8 +345,10 @@ function insertAfter(col) {
   cur.col++;
 }
 
+// notes go after bars, repeats and 1-dash steps, never into them
 function ensureNoteCol() {
-  if (curCol().t !== 'n') insertAfter(emptyCol());
+  const c = curCol();
+  if (c.t !== 'n' || (c.w === 1 && !hasNote(c))) insertAfter(emptyCol());
 }
 
 function deleteCol(moveLeft) {
@@ -358,7 +362,9 @@ function deleteCol(moveLeft) {
 
 function colText(c) {
   let lines, ann = '';
-  if (c.t === 'n') {
+  if (c.t === 'n' && c.w === 1 && !hasNote(c)) {
+    lines = Array(4).fill('-');
+  } else if (c.t === 'n') {
     const w = Math.max(1, ...c.n.map(v => (v ? v.length : 0)));
     lines = c.n.map(v => (v || '').padEnd(w, '-') + '-');
   } else if (c.t === 'bar') {
@@ -455,7 +461,10 @@ function sanitizeCol(c) {
     const v = Array.isArray(c.n) ? c.n[i] : null;
     return v == null || v === '' ? null : String(v).slice(0, 3);
   });
-  return c.h ? { t: 'n', n, h: true } : { t: 'n', n };
+  const col = { t: 'n', n };
+  if (c.w === 1) col.w = 1;
+  if (c.h) col.h = true;
+  return col;
 }
 
 function loadJSON(text) {
@@ -536,10 +545,12 @@ function parseBlock(ls, ann) {
   const K = [0, 1, 2, 3];
   const cols = [];
   let dashes = 0;
-  // each column is followed by one spacer dash; extra pairs of dashes are rests
+  // each column is followed by one spacer dash; extra pairs of dashes are 2-dash steps
+  // and an odd one left over is a 1-dash step
   const flush = () => {
-    const rests = Math.max(0, Math.floor((dashes - 1) / 2));
-    for (let r = 0; r < rests; r++) cols.push(emptyCol());
+    const extra = Math.max(0, dashes - 1);
+    for (let r = 0; r < Math.floor(extra / 2); r++) cols.push(emptyCol());
+    if (extra % 2) cols.push(emptyCol(true));
     dashes = 0;
   };
 
@@ -798,6 +809,7 @@ function describeCol(c) {
   const T = TUNINGS[song.tuning];
   if (c.t === 'bar') return 'bar line';
   if (c.t === 'rs') return 'repeat start';
+  if (c.w === 1 && !hasNote(c)) return '1-dash step';
   if (c.t === 're') return c.x
     ? `repeat end x${c.x} · type a number to change the count, ⌫ to remove it`
     : 'repeat end, no count · type a number to add one';
@@ -979,6 +991,7 @@ function act(name, r) {
     case 'redo': return restore(redoStack, undoStack);
     case 'mute': return commit(() => { ensureNoteCol(); const c = curCol(); c.n[cur.str] = c.n[cur.str] === 'x' ? null : 'x'; });
     case 'addcol': return commit(() => insertAfter(emptyCol()));
+    case 'addhalf': return commit(() => insertAfter(emptyCol(true)));
     case 'delcol': return commit(() => deleteCol(false));
     case 'bar': return commit(() => insertAfter({ t: 'bar' }));
     case 'rs': return commit(() => insertAfter({ t: 'rs' }));
@@ -1148,7 +1161,7 @@ document.addEventListener('keydown', e => {
   if (k === 'ArrowLeft') move(() => { cur.col--; });
   else if (k === 'ArrowRight') {
     if (cur.col < row().cols.length - 1) move(() => { cur.col++; });
-    else commit(() => insertAfter(emptyCol()));
+    else commit(() => insertAfter(emptyCol(e.shiftKey)));
   }
   else if (k === 'ArrowUp' && e.altKey) move(() => { cur.row--; });
   else if (k === 'ArrowDown' && e.altKey) move(() => { cur.row++; });
@@ -1156,7 +1169,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'ArrowDown') move(() => { cur.str++; });
   else if (k === 'Home') move(() => { cur.col = 0; });
   else if (k === 'End') move(() => { cur.col = row().cols.length - 1; });
-  else if (k === ' ') commit(() => insertAfter(emptyCol()));
+  else if (k === ' ') commit(() => insertAfter(emptyCol(e.shiftKey)));
   else if (/^[0-9]$/.test(k)) typeDigit(k);
   else if (k === 'x' || k === 'X') act('mute');
   else if (k === '|') act('bar');
