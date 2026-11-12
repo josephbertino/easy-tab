@@ -877,7 +877,8 @@ async function writeWithPicker(text, name, type, desc, ext, handle) {
 
 async function saveProject(saveAs) {
   const text = JSON.stringify({ app: 'easy-tab', version: 1, song }, null, 2);
-  const name = baseName() + '.easy-tab.json';
+  // the song title with all whitespace removed, e.g. "Over The Rainbow" -> OverTheRainbow.json
+  const name = (song.title.replace(/\s+/g, '') || 'Untitled') + '.json';
   try {
     if (window.showSaveFilePicker) {
       fileHandle = await writeWithPicker(text, name, 'application/json', 'Easy Tab song', '.json', saveAs ? null : fileHandle);
